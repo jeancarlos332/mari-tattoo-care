@@ -1,0 +1,346 @@
+<section class="dashboard">
+  <header class="dashboard-header">
+    <div>
+      <p class="eyebrow">ESPACIO PROFESIONAL</p>
+      <h1>Seguimientos de Mari</h1>
+      <p class="subtitle">Administra los tatuajes y su proceso de cicatrización.</p>
+    </div>
+
+    <button class="add-button" type="button" (click)="openCreateModal()">
+      <span class="add-icon">+</span>
+      Agregar tatuaje
+    </button>
+  </header>
+
+  <p *ngIf="successMessage" class="success-message page-message" role="status">
+    {{ successMessage }}
+  </p>
+
+  <div class="stats">
+    <article class="stat-card">
+      <span class="stat-label">Tatuajes registrados</span>
+      <strong>{{ sessions.length }}</strong>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-label">Seguimientos activos</span>
+      <strong>{{ activeSessions }}</strong>
+    </article>
+  </div>
+
+  <section class="sessions-section">
+    <div class="section-heading">
+      <div>
+        <h2>Últimos registros</h2>
+        <p>Consulta los clientes que tienen seguimiento.</p>
+      </div>
+
+      <button class="refresh-button" type="button" (click)="loadSessions()" [disabled]="loading">
+        {{ loading ? 'Cargando...' : 'Actualizar' }}
+      </button>
+    </div>
+
+    <p *ngIf="loading" class="status-message">Cargando seguimientos...</p>
+
+    <div *ngIf="errorMessage && !loading" class="error-message">
+      <p>{{ errorMessage }}</p>
+      <button type="button" class="refresh-button" (click)="loadSessions()">
+        Intentar nuevamente
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !errorMessage && sessions.length === 0" class="empty-state">
+      <div class="empty-icon">♡</div>
+      <h3>Aún no hay tatuajes registrados</h3>
+      <p>Agrega el primer tatuaje para iniciar su seguimiento.</p>
+      <button class="add-button secondary-add" type="button" (click)="openCreateModal()">
+        Agregar primer tatuaje
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !errorMessage && sessions.length > 0" class="session-list">
+      <article class="session-card" *ngFor="let session of sessions">
+        <div class="session-top">
+          <div class="client-avatar">
+            {{ session.client_name.charAt(0).toUpperCase() }}
+          </div>
+
+          <div class="client-info">
+            <h3>{{ session.client_name }}</h3>
+            <p class="session-date">
+              {{ formatDate(session.tattooed_at) }}
+            </p>
+          </div>
+
+          <span class="status-pill" [class.inactive]="!session.active">
+            {{ session.active ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+
+        <p *ngIf="session.client_phone" class="detail">
+          <strong>WhatsApp:</strong> {{ session.client_phone }}
+        </p>
+
+        <p *ngIf="session.tattoo_description" class="detail">
+          <strong>Tatuaje:</strong> {{ session.tattoo_description }}
+        </p>
+
+        <p class="detail">
+          <strong>Seguimiento:</strong>
+          {{ session.follow_up_days }} días
+        </p>
+
+        <div class="session-actions">
+          <button
+            class="access-button view-qr-button"
+            type="button"
+            (click)="openSessionQr(session)"
+            [disabled]="!!accessActionSessionId || !session.active"
+          >
+            {{ accessActionSessionId === session.session_id ? 'Cargando QR...' : 'Ver QR' }}
+          </button>
+
+          <button
+            class="delete-button"
+            type="button"
+            (click)="requestDeleteSession(session)"
+            [disabled]="!!deletingSessionId || !!accessActionSessionId"
+          >
+            Eliminar
+          </button>
+        </div>
+
+        <p
+          *ngIf="copyMessage && selectedSessionForQr?.session_id === session.session_id"
+          class="session-copy-message"
+          role="status"
+        >
+          {{ copyMessage }}
+        </p>
+      </article>
+    </div>
+  </section>
+</section>
+
+<div *ngIf="showCreateModal" class="modal-backdrop" (click)="closeCreateModal()">
+  <section
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">NUEVO REGISTRO</p>
+        <h2 id="modal-title">Agregar tatuaje</h2>
+        <p class="modal-subtitle">Completa los datos básicos del cliente.</p>
+      </div>
+
+      <button
+        class="close-button"
+        type="button"
+        aria-label="Cerrar ventana"
+        [disabled]="saving"
+        (click)="closeCreateModal()"
+      >
+        ×
+      </button>
+    </header>
+
+    <form #sessionForm="ngForm" (ngSubmit)="createSession()" class="modal-form">
+      <div class="field">
+        <label for="clientName">Nombre del cliente *</label>
+        <input
+          id="clientName"
+          name="clientName"
+          type="text"
+          [(ngModel)]="clientName"
+          placeholder="Nombre del cliente"
+          minlength="2"
+          maxlength="150"
+          autocomplete="name"
+          required
+          autofocus
+        />
+      </div>
+
+      <div class="field">
+        <label for="clientPhone">WhatsApp <span>(opcional)</span></label>
+        <input
+          id="clientPhone"
+          name="clientPhone"
+          type="tel"
+          [(ngModel)]="clientPhone"
+          placeholder="300 123 4567"
+          maxlength="30"
+          autocomplete="tel"
+        />
+      </div>
+
+      <div class="field">
+        <label for="tattooedAt">Fecha del tatuaje *</label>
+        <input id="tattooedAt" name="tattooedAt" type="date" [(ngModel)]="tattooedAt" required />
+      </div>
+
+      <div class="field">
+        <label for="tattooDescription"> Descripción <span>(opcional)</span> </label>
+        <input
+          id="tattooDescription"
+          name="tattooDescription"
+          type="text"
+          [(ngModel)]="tattooDescription"
+          placeholder="Ej. Flores en el antebrazo"
+          maxlength="2000"
+        />
+      </div>
+
+      <div class="follow-up-note">
+        <span class="note-icon">✓</span>
+        Seguimiento configurado automáticamente por 30 días.
+      </div>
+
+      <p *ngIf="saveErrorMessage" class="error-message" role="alert">
+        {{ saveErrorMessage }}
+      </p>
+
+      <footer class="modal-actions">
+        <button
+          class="cancel-button"
+          type="button"
+          [disabled]="saving"
+          (click)="closeCreateModal()"
+        >
+          Cancelar
+        </button>
+
+        <button class="save-button" type="submit" [disabled]="sessionForm.invalid || saving">
+          {{ saving ? 'Guardando...' : 'Guardar tatuaje' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
+
+<div
+  *ngIf="selectedSessionForDeletion as selectedSession"
+  class="modal-backdrop"
+  (click)="cancelDeleteSession()"
+>
+  <section
+    class="modal delete-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="delete-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="delete-icon">!</div>
+
+    <h2 id="delete-modal-title">¿Eliminar este seguimiento?</h2>
+
+    <p class="delete-description">
+      Vas a eliminar el seguimiento de
+      <strong>{{ selectedSession.client_name }}</strong
+      >. Esta acción no se puede deshacer.
+    </p>
+
+    <p class="delete-warning">
+      Se eliminarán los datos de este tatuaje y sus registros relacionados. Si el cliente tiene
+      otros tatuajes registrados, estos se conservarán.
+    </p>
+
+    <p *ngIf="deleteErrorMessage" class="error-message" role="alert">
+      {{ deleteErrorMessage }}
+    </p>
+
+    <footer class="modal-actions">
+      <button
+        class="cancel-button"
+        type="button"
+        [disabled]="!!deletingSessionId"
+        (click)="cancelDeleteSession()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        class="confirm-delete-button"
+        type="button"
+        [disabled]="!!deletingSessionId"
+        (click)="confirmDeleteSession()"
+      >
+        {{ deletingSessionId === selectedSession.session_id ? 'Eliminando...' : 'Sí, eliminar' }}
+      </button>
+    </footer>
+  </section>
+</div>
+
+<div *ngIf="showQrModal" class="modal-backdrop qr-backdrop" (click)="closeQrModal()">
+  <section
+    class="modal qr-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="qr-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">SEGUIMIENTO CREADO</p>
+        <h2 id="qr-modal-title">Código QR del cliente</h2>
+        <p class="modal-subtitle">Muestra este código para que el cliente abra su seguimiento.</p>
+      </div>
+
+      <button class="close-button" type="button" aria-label="Cerrar" (click)="closeQrModal()">
+        ×
+      </button>
+    </header>
+
+    <div class="qr-client">
+      <span class="qr-client-label">CLIENTE</span>
+      <strong>{{ createdClientName }}</strong>
+    </div>
+
+    <div class="qr-image-container">
+      <p *ngIf="generatingQr" class="status-message">Generando código QR...</p>
+
+      <img
+        *ngIf="createdQrCode"
+        [src]="createdQrCode"
+        alt="Código QR privado para abrir el seguimiento del tatuaje"
+        class="qr-image"
+      />
+    </div>
+
+    <p *ngIf="qrErrorMessage" class="error-message" role="alert">
+      {{ qrErrorMessage }}
+    </p>
+
+    <div class="qr-link-section">
+      <label for="privateAccessLink">Enlace privado</label>
+      <input
+        id="privateAccessLink"
+        type="text"
+        [value]="createdAccessUrl"
+        readonly
+        (focus)="$any($event.target).select()"
+      />
+
+      <button class="save-button qr-copy-button" type="button" (click)="copyAccessLink()">
+        Copiar enlace
+      </button>
+
+      <p *ngIf="copyMessage" class="qr-copy-message" role="status">
+        {{ copyMessage }}
+      </p>
+    </div>
+
+    <p class="qr-expiration">
+      Vence el {{ createdAccessExpiresAt | date: 'dd/MM/yyyy, h:mm a' }}. El enlace es privado:
+      compártelo solo con este cliente.
+    </p>
+
+    <footer class="modal-actions">
+      <button class="cancel-button" type="button" (click)="closeQrModal()">Cerrar</button>
+    </footer>
+  </section>
+</div>

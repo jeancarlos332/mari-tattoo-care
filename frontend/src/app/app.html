@@ -1,0 +1,24 @@
+
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" routerLink="/" aria-label="Ir al inicio de Mari Tattoo Care">
+      <span class="brand-mark">M.</span>
+      <span class="brand-copy">
+        <strong>MARI</strong>
+        <small>TATTOO CARE</small>
+      </span>
+    </a>
+
+    <span class="topbar-note">Tu proceso, acompañado.</span>
+  </header>
+
+  <main>
+    <router-outlet />
+  </main>
+
+  <footer class="footer">
+    <a class="footer-brand" routerLink="/">MARI TATTOO CARE</a>
+    <span>El arte también se cuida.</span>
+    <span>© {{ currentYear }}</span>
+  </footer>
+</div>

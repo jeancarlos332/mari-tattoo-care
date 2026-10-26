@@ -1,0 +1,146 @@
+
+<section class="page-content">
+  <a class="back-link" routerLink="/">← Volver al inicio</a>
+
+  @if (loading) {
+    <div class="access-state">
+      <p class="eyebrow">MARI TATTOO CARE</p>
+      <h1>Abriendo tu seguimiento...</h1>
+      <p>Estamos verificando tu acceso privado.</p>
+    </div>
+  } @else if (accessError) {
+    <div class="access-state access-error">
+      <p class="eyebrow">ACCESO PRIVADO</p>
+      <h1>No pudimos abrir tu seguimiento</h1>
+      <p>{{ accessError }}</p>
+      <a class="home-link" routerLink="/">Volver al inicio</a>
+    </div>
+  } @else if (access) {
+    <div class="page-heading">
+      <span class="eyebrow">TU SEGUIMIENTO PERSONAL</span>
+      <h1>Un día a la vez,<br /><em>con cariño.</em></h1>
+      <p>
+        Hola, {{ access.client_name }}. Aquí puedes consultar los datos
+        de tu tatuaje y preparar el registro fotográfico de tu evolución.
+      </p>
+    </div>
+
+    <div class="session-info-card">
+      <span class="eyebrow">TU TATUAJE</span>
+      <h2>{{ access.tattoo_description || 'Seguimiento de cicatrización' }}</h2>
+
+      <p>
+        <strong>Artista:</strong> {{ access.artist_name }}
+      </p>
+      <p>
+        <strong>Fecha del tatuaje:</strong>
+        {{ formatDate(access.tattooed_at) }}
+      </p>
+      <p>
+        <strong>Duración del seguimiento:</strong>
+        {{ access.follow_up_days }} días
+      </p>
+    </div>
+
+    <div class="notice-card">
+      <span class="notice-icon">✦</span>
+      <div>
+        <strong>Antes de tomar tu foto</strong>
+        <p>
+          Busca luz natural, evita sombras fuertes y procura que el tatuaje
+          ocupe buena parte de la imagen.
+        </p>
+      </div>
+    </div>
+
+    <div class="photo-card">
+      <div class="photo-card-heading">
+        <div>
+          <span class="eyebrow">REGISTRO FOTOGRÁFICO</span>
+          <h2>La foto de hoy</h2>
+        </div>
+        <span class="date-pill">{{ today | date:'d MMM' }}</span>
+      </div>
+
+      @if (selectedPhoto) {
+        <div class="photo-preview">
+          <img
+            [src]="selectedPhoto"
+            alt="Vista previa de la fotografía del tatuaje"
+          />
+        </div>
+
+        <p class="file-name">{{ selectedFileName }}</p>
+
+        <div class="photo-actions">
+          <label class="button button-outline upload-button">
+            Cambiar foto
+            <input
+              type="file"
+              accept="image/*"
+              (change)="onPhotoSelected($event)"
+            />
+          </label>
+
+          <button
+            class="button button-dark"
+            type="button"
+            (click)="confirmPhotoPreview()"
+          >
+            Confirmar vista previa
+          </button>
+        </div>
+      } @else {
+        <label class="upload-zone">
+          <span class="upload-icon">↑</span>
+          <strong>Selecciona una fotografía</strong>
+          <span>Desde la galería de tu dispositivo · Máximo 10 MB</span>
+          <input
+            type="file"
+            accept="image/*"
+            (change)="onPhotoSelected($event)"
+          />
+        </label>
+      }
+
+      @if (photoError) {
+        <p class="error-message" role="alert">{{ photoError }}</p>
+      }
+
+      @if (photoConfirmed) {
+        <div class="inline-success" role="status">
+          Vista previa confirmada. La fotografía todavía no se ha enviado
+          ni guardado.
+        </div>
+      }
+
+      <label class="field-label" for="observation">
+        ¿Cómo sientes tu tatuaje hoy? (opcional)
+      </label>
+
+      <textarea
+        id="observation"
+        name="observation"
+        [(ngModel)]="observation"
+        placeholder="Describe brevemente cómo te sientes..."
+        rows="3"
+        maxlength="1000"
+      ></textarea>
+
+      <p class="privacy-note">
+        La fotografía y la observación todavía son una vista previa local.
+        No se han enviado ni guardado.
+      </p>
+    </div>
+
+    <div class="care-reminder">
+      <strong>Una nota importante</strong>
+      <p>
+        Si tienes dolor que aumenta, enrojecimiento que se extiende,
+        pus o fiebre, busca valoración médica. No esperes una respuesta
+        de la aplicación.
+      </p>
+    </div>
+  }
+
+</section>
